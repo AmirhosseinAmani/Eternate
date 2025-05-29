@@ -21,7 +21,7 @@ const ProductList: React.FC = () => {
   
   const carouselRef = useRef<HTMLDivElement>(null);
   const itemRef = useRef<HTMLDivElement>(null);
-  const [itemWidth, setItemWidth] = useState(0);
+  const [itemCalculatedWidth, setItemCalculatedWidth] = useState(0);
   const [containerWidth, setContainerWidth] = useState(0);
   
   const { products, loading } = useProducts(appliedFilters);
@@ -33,27 +33,32 @@ const ProductList: React.FC = () => {
   useEffect(() => {
     const updateDimensions = () => {
       if (itemRef.current && carouselRef.current) {
-        const item = itemRef.current;
         const container = carouselRef.current;
-        
-        const itemStyle = window.getComputedStyle(item);
-        const itemWidthWithMargin = item.offsetWidth + 
-          parseFloat(itemStyle.marginLeft) + 
-          parseFloat(itemStyle.marginRight);
-        
-        setItemWidth(itemWidthWithMargin); 
-        setContainerWidth(container.offsetWidth);
+        const containerWidth = container.offsetWidth;
+        setContainerWidth(containerWidth);
+
+        // Calculate gap width dynamically and safely
+        const containerStyle = window.getComputedStyle(container);
+        const gap = parseFloat(containerStyle.gap) || parseFloat(containerStyle.columnGap) || 0;
+
+        // Calculate item width based on container width, visible items, and gaps
+        // Ensure calculatedWidth is not negative
+        const calculatedWidth = (containerWidth - (maxVisibleItems - 1) * gap) / maxVisibleItems;
+        setItemCalculatedWidth(calculatedWidth > 0 ? calculatedWidth : 0);
       }
     };
 
     const timer = setTimeout(updateDimensions, 100);
-    
     window.addEventListener('resize', updateDimensions);
+    
+    // Update dimensions initially and when maxVisibleItems changes (on mobile/desktop switch)
+    updateDimensions();
+
     return () => {
       window.removeEventListener('resize', updateDimensions);
       clearTimeout(timer);
     };
-  }, [isMobile, maxVisibleItems]);
+  }, [maxVisibleItems]); // Depend on maxVisibleItems as it affects item width
 
   useEffect(() => {
     const handleResize = () => {
@@ -252,8 +257,12 @@ const ProductList: React.FC = () => {
           <div 
             className="flex transition-transform duration-500 ease-in-out gap-4 sm:gap-8"
             style={{
-              transform: `translateX(-${currentIndex * (containerWidth / maxVisibleItems)}px)`,
-              width: `${totalItems * (containerWidth / maxVisibleItems)}px`,
+              transform: carouselRef.current 
+                ? `translateX(-${currentIndex * (itemCalculatedWidth + (maxVisibleItems > 1 ? (parseFloat(window.getComputedStyle(carouselRef.current)?.gap) || parseFloat(window.getComputedStyle(carouselRef.current)?.columnGap) || 0) : 0))}px)`
+                : 'none',
+              width: carouselRef.current
+                ? `${totalItems * (itemCalculatedWidth + (maxVisibleItems > 1 ? (parseFloat(window.getComputedStyle(carouselRef.current)?.gap) || parseFloat(window.getComputedStyle(carouselRef.current)?.columnGap) || 0) : 0))}px`
+                : 'auto',
             }}
           >
             {products.slice(0, totalItems).map((product, index) => {
@@ -263,7 +272,7 @@ const ProductList: React.FC = () => {
                   key={product.name} 
                   ref={index === 0 ? itemRef : null}
                   className="flex-none space-y-3 sm:space-y-4 px-1 sm:px-2"
-                  style={{ width: `${containerWidth / maxVisibleItems}px` }}
+                  style={{ width: `${itemCalculatedWidth}px` }}
                 >
                    <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
                     <img
