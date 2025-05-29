@@ -27,7 +27,7 @@ const ProductList: React.FC = () => {
   const { products, loading } = useProducts(appliedFilters);
   const { goldPrice } = useGoldPrice();
 
-  const totalItems = 8;
+  const totalItems = 9;
   const maxIndex = Math.max(0, totalItems - maxVisibleItems);
 
   useEffect(() => {
