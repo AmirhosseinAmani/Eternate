@@ -53,7 +53,7 @@ const ProductList: React.FC = () => {
       window.removeEventListener('resize', updateDimensions);
       clearTimeout(timer);
     };
-  }, [isMobile]);
+  }, [isMobile, maxVisibleItems]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -250,7 +250,7 @@ const ProductList: React.FC = () => {
 
         <div className="overflow-hidden">
           <div 
-            className="flex transition-transform duration-500 ease-in-out"
+            className="flex transition-transform duration-500 ease-in-out gap-4 sm:gap-8"
             style={{
               transform: `translateX(-${currentIndex * (containerWidth / maxVisibleItems)}px)`,
               width: `${totalItems * (containerWidth / maxVisibleItems)}px`,
