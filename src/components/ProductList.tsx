@@ -23,7 +23,8 @@ const ProductList: React.FC = () => {
   const itemRef = useRef<HTMLDivElement>(null);
   const [itemCalculatedWidth, setItemCalculatedWidth] = useState(0);
   const [containerWidth, setContainerWidth] = useState(0);
-  
+  const [gapWidth, setGapWidth] = useState(0);
+
   const { products, loading } = useProducts(appliedFilters);
   const { goldPrice } = useGoldPrice();
 
@@ -32,18 +33,18 @@ const ProductList: React.FC = () => {
 
   useEffect(() => {
     const updateDimensions = () => {
-      if (itemRef.current && carouselRef.current) {
+      if (carouselRef.current) {
         const container = carouselRef.current;
         const containerWidth = container.offsetWidth;
         setContainerWidth(containerWidth);
 
-        // Calculate gap width dynamically and safely
         const containerStyle = window.getComputedStyle(container);
         const gap = parseFloat(containerStyle.gap) || parseFloat(containerStyle.columnGap) || 0;
+        setGapWidth(gap);
 
-        // Calculate item width based on container width, visible items, and gaps
-        // Ensure calculatedWidth is not negative
-        const calculatedWidth = (containerWidth - (maxVisibleItems - 1) * gap) / maxVisibleItems;
+        const totalGapWidth = (maxVisibleItems - 1) * gap;
+        const calculatedWidth = (containerWidth - totalGapWidth) / maxVisibleItems;
+        
         setItemCalculatedWidth(calculatedWidth > 0 ? calculatedWidth : 0);
       }
     };
@@ -51,14 +52,13 @@ const ProductList: React.FC = () => {
     const timer = setTimeout(updateDimensions, 100);
     window.addEventListener('resize', updateDimensions);
     
-    // Update dimensions initially and when maxVisibleItems changes (on mobile/desktop switch)
     updateDimensions();
 
     return () => {
       window.removeEventListener('resize', updateDimensions);
       clearTimeout(timer);
     };
-  }, [maxVisibleItems]); // Depend on maxVisibleItems as it affects item width
+  }, [maxVisibleItems]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -257,12 +257,7 @@ const ProductList: React.FC = () => {
           <div 
             className="flex transition-transform duration-500 ease-in-out gap-4 sm:gap-8"
             style={{
-              transform: carouselRef.current 
-                ? `translateX(-${currentIndex * (itemCalculatedWidth + (maxVisibleItems > 1 ? (parseFloat(window.getComputedStyle(carouselRef.current)?.gap) || parseFloat(window.getComputedStyle(carouselRef.current)?.columnGap) || 0) : 0))}px)`
-                : 'none',
-              width: carouselRef.current
-                ? `${totalItems * (itemCalculatedWidth + (maxVisibleItems > 1 ? (parseFloat(window.getComputedStyle(carouselRef.current)?.gap) || parseFloat(window.getComputedStyle(carouselRef.current)?.columnGap) || 0) : 0))}px`
-                : 'auto',
+              transform: `translateX(-${currentIndex * (itemCalculatedWidth + gapWidth)}px)`,
             }}
           >
             {products.slice(0, totalItems).map((product, index) => {
