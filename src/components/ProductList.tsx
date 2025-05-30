@@ -45,18 +45,27 @@ const ProductList: React.FC = () => {
         const totalGapWidth = (maxVisibleItems - 1) * gap;
         const calculatedWidth = (containerWidth - totalGapWidth) / maxVisibleItems;
         
-        setItemCalculatedWidth(calculatedWidth > 0 ? calculatedWidth : 0);
+        setItemCalculatedWidth(calculatedWidth > 0 ? Math.floor(calculatedWidth) : 0);
       }
     };
 
-    const timer = setTimeout(updateDimensions, 100);
-    window.addEventListener('resize', updateDimensions);
+    const timer = setTimeout(() => {
+      requestAnimationFrame(updateDimensions);
+    }, 100);
+
+    const resizeObserver = new ResizeObserver(() => {
+      requestAnimationFrame(updateDimensions);
+    });
+
+    if (carouselRef.current) {
+      resizeObserver.observe(carouselRef.current);
+    }
     
-    updateDimensions();
+    requestAnimationFrame(updateDimensions);
 
     return () => {
-      window.removeEventListener('resize', updateDimensions);
       clearTimeout(timer);
+      resizeObserver.disconnect();
     };
   }, [maxVisibleItems]);
 
@@ -266,7 +275,7 @@ const ProductList: React.FC = () => {
                 <div 
                   key={product.name} 
                   ref={index === 0 ? itemRef : null}
-                  className="flex-none space-y-3 sm:space-y-4 px-1 sm:px-2"
+                  className="flex-none space-y-3 sm:space-y-4"
                   style={{ width: `${itemCalculatedWidth}px` }}
                 >
                    <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
@@ -277,7 +286,7 @@ const ProductList: React.FC = () => {
                     />
                   </div>
                   
-                  <div className="space-y-2">
+                  <div className="space-y-2 px-1 sm:px-2">
                     <h2 className="font-light text-lg sm:text-xl">{product.name}</h2>
                     <p className="font-light text-base sm:text-lg">${calculatePrice(product.popularityScore, product.weight, goldPrice)} USD</p>
                     <p className="text-sm text-gray-500">Weight: {product.weight}g</p>
